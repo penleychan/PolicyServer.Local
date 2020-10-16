@@ -5,12 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="IdentityModel" Version="4.2.0" />
     <PackageReference Include="IdentityServer4.AccessTokenValidation" Version="3.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PolicyServer.Admin.Client\PolicyServer.Admin.Client.csproj" />
+    <ProjectReference Include="..\PolicyServer.Admin.EntityFramework\PolicyServer.Admin.EntityFramework.csproj" />
   </ItemGroup>
 
 </Project>

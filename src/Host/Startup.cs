@@ -23,15 +23,9 @@ namespace Host
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc(options =>
-            {
-                // this sets up a default authorization policy for the application
-                // in this case, authenticated users are required (besides controllers/actions that have [AllowAnonymous]
-                var policy = new AuthorizationPolicyBuilder()
-                    .RequireAuthenticatedUser()
-                    .Build();
-                options.Filters.Add(new AuthorizeFilter(policy));
-            });
+            // `AddControllersWithViews()` Calls AddAuthorization under the hood.
+            // Below, in the call to `UseEndpoints(...)` we require authorization to all controllers (besides controllers/actions that have `[AllowAnonymous]`).
+            services.AddControllersWithViews();
 
             services.AddAuthentication("Cookies")
                 .AddCookie("Cookies");
@@ -45,12 +39,12 @@ namespace Host
             // this sets up the PolicyServer client library and policy provider - configuration is loaded from appsettings.json
             services.AddPolicyServerClient(x =>
                 {
-                    x.IdentityServerEndpoint = "http://localhost:5000";
-                    x.ClientId = "policy.client";
+                    x.IdentityServerEndpoint = "http://localhost:5001";
+                    x.ClientId = "policyserver.client";
                     x.ClientSecret = "secret";
-                    x.PolicyServerEndpoint = "http://localhost:9117";
-                    x.PolicyName = "Default";
-                    x.PolicySecret = "123";
+                    x.PolicyServerEndpoint = "http://localhost:5500";
+                    x.PolicyName = "Hospital";
+                    x.PolicySecret = "secret";
                     x.PolicyServerApiName = "policyserver.api";
                 })
                 .AddAuthorizationPermissionPolicies();
@@ -59,18 +53,25 @@ namespace Host
             services.AddTransient<IAuthorizationHandler, MedicationRequirementHandler>();
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseDeveloperExceptionPage();
             app.UseAuthentication();
+
+            app.UseStaticFiles();
+            app.UseRouting();
 
             // add this middleware to make roles and permissions available as claims
             // this is mainly useful for using the classic [Authorize(Roles="foo")] and IsInRole functionality
             // this is not needed if you use the client library directly or the new policy-based authorization framework in ASP.NET Core
             app.UsePolicyServerClaims();
 
-            app.UseStaticFiles();
-            app.UseMvcWithDefaultRoute();
+            app.UseAuthorization();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapDefaultControllerRoute().RequireAuthorization();
+            });
         }
     }
 }
